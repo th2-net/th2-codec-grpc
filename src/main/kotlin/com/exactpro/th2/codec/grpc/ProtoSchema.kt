@@ -14,7 +14,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.exactpro.th2
+package com.exactpro.th2.codec.grpc
 
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors

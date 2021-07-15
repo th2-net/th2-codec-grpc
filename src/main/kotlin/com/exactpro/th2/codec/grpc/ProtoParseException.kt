@@ -14,6 +14,6 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.exactpro.th2
+package com.exactpro.th2.codec.grpc
 
-open class CustomException(message: String) : Exception(message)
+class ProtoParseException(message: String) : CustomException(message)

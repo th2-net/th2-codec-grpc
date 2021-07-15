@@ -14,7 +14,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.exactpro.th2;
+package com.exactpro.th2.codec.grpc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
+import com.exactpro.th2.codec.grpc.ProtoDecoder;
 import com.exactpro.th2.common.grpc.Direction;
 import com.exactpro.th2.common.grpc.MessageID;
 import com.exactpro.th2.common.grpc.RawMessage;

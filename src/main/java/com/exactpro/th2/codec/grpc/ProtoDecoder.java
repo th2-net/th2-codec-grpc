@@ -14,7 +14,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.exactpro.th2;
+package com.exactpro.th2.codec.grpc;
 
 import java.io.File;
 import java.io.IOException;

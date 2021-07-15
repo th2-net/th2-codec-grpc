@@ -14,6 +14,9 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.exactpro.th2
+package com.exactpro.th2.codec.grpc
 
-class ProtoParseException(message: String) : CustomException(message)
+import com.exactpro.th2.codec.api.IPipelineCodecSettings
+
+class GrpcPipelineCodecSettings : IPipelineCodecSettings {
+}
