@@ -30,10 +30,6 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     override val settingsClass: Class<out IPipelineCodecSettings>
         get() = GrpcPipelineCodecSettings::class.java
 
-    companion object {
-        val logger = KotlinLogging.logger { }
-    }
-
     private lateinit var protoDir: File
 
     override fun createCodec(): IPipelineCodec {
@@ -41,15 +37,30 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     }
 
     override fun init(dictionary: InputStream, settings: IPipelineCodecSettings?) {
-        dictionary.use {
-            val tempDir = Path.of("/tmp/protos")
-            Files.createDirectories(tempDir)
-            val tempDirectoryProto = Files.createTempDirectory(tempDir, "").toFile()
+        decodeProtos(dictionary, protosDir, settings)
+    }
 
-            logger.info { "Decoded proto files: ${Files.list(tempDirectoryProto.toPath()).use { stream ->
-                stream.map { path -> path.fileName.toString() }.collect(Collectors.toList()) }}" }
+    companion object {
+        private val logger = KotlinLogging.logger { }
+        const val protosDir = "/tmp/protos"
 
-            ZipBase64Codec.decode(it.readAllBytes(), tempDirectoryProto)
+        fun decodeProtos(dictionary: InputStream, parentDir: String, settings: IPipelineCodecSettings?): Path {
+            return dictionary.use {
+                val tempDir = Path.of(parentDir)
+                Files.createDirectories(tempDir)
+                val protoDir = Files.createTempDirectory(tempDir, "")
+
+                ZipBase64Codec.decode(it.readAllBytes(), protoDir.toFile())
+
+                logger.info {
+                    "Decoded proto files: ${
+                        Files.list(protoDir).use { stream ->
+                            stream.map { path -> path.fileName.toString() }.collect(Collectors.toList())
+                        }
+                    }"
+                }
+                protoDir
+            }
         }
     }
 }
