@@ -42,7 +42,9 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
 
     override fun init(dictionary: InputStream, settings: IPipelineCodecSettings?) {
         dictionary.use {
-            val tempDirectoryProto = Files.createTempDirectory(Path.of("/tmp/protos"), "").toFile()
+            val tempDir = Path.of("/tmp/protos")
+            Files.createDirectories(tempDir)
+            val tempDirectoryProto = Files.createTempDirectory(tempDir, "").toFile()
 
             logger.info { "Decoded proto files: ${Files.list(tempDirectoryProto.toPath()).use { stream ->
                 stream.map { path -> path.fileName.toString() }.collect(Collectors.toList()) }}" }
