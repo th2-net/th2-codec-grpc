@@ -36,28 +36,10 @@ class ProtobufParser(private val protoCompileDirectory: String) {
 
     private val defaultPath = "src/main/resources/proto"
     private val temporaryFiles = createDirectory("temp")
-    private val defaultPackage = "\n\npackage th2;\n\n"
-    private val matchPackage = Regex("""[\W\s]+package[\W\s]+""")
 
     private data class ParsedProtoFile(
         val descriptor: List<DescriptorProtos.FileDescriptorProto>
     )
-
-    fun protoToFileDescriptors(protoFile: File, searchPath: String): List<DescriptorProtos.FileDescriptorProto> =
-        runBlocking {
-            parseProtoFile(protoFile, searchPath).descriptor
-        }
-
-
-    private fun insertPackageName(protoFile: String): String {
-        return if (!protoFile.contains(matchPackage)) {
-            StringBuilder(protoFile).apply {
-                append(defaultPackage)
-            }.toString()
-        } else {
-            protoFile
-        }
-    }
 
     private fun createDirectory(directoryName: String): File {
         return protoCompileDirectory.let {
@@ -118,18 +100,14 @@ class ProtobufParser(private val protoCompileDirectory: String) {
         }
     }
 
-    fun parseProtosToSchemas(protoDir: File, protoFiles: List<File>): List<ProtoSchema>? {
+    fun parseProtosToSchemas(protoDir: File, protoFiles: List<File>): List<ProtoSchema> {
         return runBlocking {
-            withContext(Dispatchers.IO) {
-                val protoSchemas = protoFiles.map { file ->
-                    parseProtoFile(file, protoDir.path).let {
-                        ProtoSchema(
-                            it.descriptor,
-                        )
-                    }
-                }
-                protoSchemas
+            val protoSchemas = protoFiles.map { file ->
+                ProtoSchema(
+                    parseProtoFile(file, protoDir.path).descriptor,
+                )
             }
+            protoSchemas
         }
     }
 

@@ -20,10 +20,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.exactpro.th2.common.grpc.Direction;
@@ -38,15 +38,17 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 
 public class ProtoDecoder {
-	private final List<ProtoSchema> protoSchemas;
 	public static final String GRPC_CALL = "GRPC_CALL";
 	private static final String TEMP_DIR = "gen/test/temp";
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	private static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE_REF = new TypeReference<>() {};
+
+	private final Map<String, Descriptors.ServiceDescriptor> serviceDescriptorMap = new HashMap<>();
 	
 	public ProtoDecoder(Path protosPath) throws IOException {
 		List<File> protos = Files.list(protosPath).map(Path::toFile).collect(Collectors.toList());
-		protoSchemas = new ProtobufParser(TEMP_DIR).parseProtosToSchemas(protosPath.toFile(), protos);
+		List<ProtoSchema> protoSchemas = new ProtobufParser(TEMP_DIR).parseProtosToSchemas(protosPath.toFile(), protos);
+		protoSchemas.forEach(schema -> serviceDescriptorMap.putAll(schema.getServices()));
 	}
 	
 	public Map<String, Object> decode(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
@@ -63,20 +65,20 @@ public class ProtoDecoder {
 	private Descriptors.Descriptor getDescriptor(String grpcCallPath, Direction direction) {
 		GrpcCall grpcCall = new GrpcCall(grpcCallPath);
 		String serviceName = grpcCall.getService();
-		//TODO make a map: name -> ServerDescriptor to avoid this loop being called constantly
-		for (ProtoSchema schema : protoSchemas) {
-			Optional<Descriptors.ServiceDescriptor> serviceDescOpt = schema.getServiceDescriptor(serviceName);
-			if (serviceDescOpt.isEmpty())
-				continue;
-			
-			String methodName = grpcCall.getMethod();
-			Descriptors.MethodDescriptor methodDesc = serviceDescOpt.get().findMethodByName(methodName);
-			if (direction == Direction.FIRST)
-				return methodDesc.getInputType();
-			else
-				return methodDesc.getOutputType();
-		}
-		throw new NoSuchElementException("There is no such service '" + serviceName + '\'');
+
+		Descriptors.ServiceDescriptor serviceDesc = serviceDescriptorMap.get(serviceName);
+		if (serviceDesc == null)
+			throw new NoSuchElementException("There is no such service '" + serviceName + '\'');
+		
+		String methodName = grpcCall.getMethod();
+		Descriptors.MethodDescriptor methodDesc = serviceDesc.findMethodByName(methodName);
+		if (methodDesc == null)
+			throw new NoSuchElementException("There is no such method '" + methodName + "' for service '" + serviceName + '\'');
+
+		if (direction == Direction.FIRST)
+			return methodDesc.getInputType();
+		else
+			return methodDesc.getOutputType();
 	}
 	
 	private static Map<String, Object> decodeDynamicMessage(DynamicMessage dynamicMessage)

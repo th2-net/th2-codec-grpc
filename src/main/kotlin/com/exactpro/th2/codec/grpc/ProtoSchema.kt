@@ -26,18 +26,15 @@ data class ProtoSchema(
 ) {
 
     companion object {
-        fun getMainSchema(
-            protoFileName: String,
-            protoSchema: List<DescriptorProtos.FileDescriptorProto>
-        ): DescriptorProtos.FileDescriptorProto {
-            return protoSchema.find { it.name == protoFileName }
-                ?: throw ProtoParseException("Incorrect proto descriptor name: '$protoFileName'")
-        }
-
         val logger = KotlinLogging.logger { }
     }
 
     private val protoSchemaMap = protoSchema.associateBy { it.name }
+    val services = protoSchema.flatMap { createDescriptor(it).services }.map { it.name to it }.toMap()
+
+    fun getServiceDescriptor(serviceName: String): Optional<Descriptors.ServiceDescriptor> {
+        return Optional.ofNullable(services[serviceName])
+    }
 
     private fun createFileDescriptor(
         protoDescriptor: DescriptorProtos.FileDescriptorProto,
@@ -60,10 +57,5 @@ data class ProtoSchema(
 
     private fun createDescriptor(schema: DescriptorProtos.FileDescriptorProto): Descriptors.FileDescriptor {
         return createFileDescriptor(schema, mutableMapOf())
-    }
-
-    fun getServiceDescriptor(serviceName: String): Optional<Descriptors.ServiceDescriptor> {
-        return protoSchema.stream().map { desc -> createDescriptor(desc) }
-            .flatMap { desc -> desc.services.stream()}.filter { serviceDesc -> serviceDesc.name == serviceName }.findFirst()
     }
 }
