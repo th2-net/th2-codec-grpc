@@ -21,6 +21,8 @@ import com.exactpro.th2.codec.api.IPipelineCodecFactory
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
 
 class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     override val settingsClass: Class<out IPipelineCodecSettings>
@@ -34,8 +36,8 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
 
     override fun init(dictionary: InputStream, settings: IPipelineCodecSettings?) {
         dictionary.use {
-            //TODO what path should we use?
-            ZipBase64Codec.decode(it.readAllBytes(), File(""))
+            val tempDirectoryProto = Files.createTempDirectory(Path.of("/tmp/protos"), "").toFile()
+            ZipBase64Codec.decode(it.readAllBytes(), tempDirectoryProto)
         }
     }
 }
