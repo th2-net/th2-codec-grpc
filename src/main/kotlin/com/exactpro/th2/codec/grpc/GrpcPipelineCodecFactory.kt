@@ -37,12 +37,12 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     }
 
     override fun init(dictionary: InputStream, settings: IPipelineCodecSettings?) {
-        decodeProtos(dictionary, protosDir, settings)
+        protoDir = decodeProtos(dictionary, parentProtosDir, settings).toFile()
     }
 
     companion object {
         private val logger = KotlinLogging.logger { }
-        const val protosDir = "/tmp/protos"
+        const val parentProtosDir = "/tmp/protos"
 
         fun decodeProtos(dictionary: InputStream, parentDir: String, settings: IPipelineCodecSettings?): Path {
             return dictionary.use {
