@@ -28,7 +28,7 @@ import java.util.stream.Collectors
 
 class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     override val settingsClass: Class<out IPipelineCodecSettings>
-        get() = TODO("Not yet implemented")
+        get() = GrpcPipelineCodecSettings::class.java
 
     companion object {
         val logger = KotlinLogging.logger { }
