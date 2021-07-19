@@ -19,14 +19,20 @@ package com.exactpro.th2.codec.grpc
 import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.api.IPipelineCodecFactory
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
+import mu.KotlinLogging
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.stream.Collectors
 
 class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     override val settingsClass: Class<out IPipelineCodecSettings>
         get() = TODO("Not yet implemented")
+
+    companion object {
+        val logger = KotlinLogging.logger { }
+    }
 
     private lateinit var protoDir: File
 
@@ -37,6 +43,10 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     override fun init(dictionary: InputStream, settings: IPipelineCodecSettings?) {
         dictionary.use {
             val tempDirectoryProto = Files.createTempDirectory(Path.of("/tmp/protos"), "").toFile()
+
+            logger.info { "Decoded proto files: ${Files.list(tempDirectoryProto.toPath()).use { stream ->
+                stream.map { path -> path.fileName.toString() }.collect(Collectors.toList()) }}" }
+
             ZipBase64Codec.decode(it.readAllBytes(), tempDirectoryProto)
         }
     }
