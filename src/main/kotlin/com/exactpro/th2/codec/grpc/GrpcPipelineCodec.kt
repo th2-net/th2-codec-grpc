@@ -17,6 +17,7 @@
 package com.exactpro.th2.codec.grpc
 
 import com.exactpro.th2.codec.api.IPipelineCodec
+import com.exactpro.th2.codec.grpc.GrpcPipelineCodecFactory.Companion.PROTOCOL
 import com.exactpro.th2.common.grpc.AnyMessage
 import com.exactpro.th2.common.grpc.Message
 import com.exactpro.th2.common.grpc.MessageGroup
@@ -26,12 +27,6 @@ import com.exactpro.th2.common.message.plusAssign
 import java.io.File
 
 class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
-    companion object {
-        private const val PROTOCOL = "protobuf"
-    }
-
-    override val protocol: String
-        get() = PROTOCOL
 
     private val decoder: ProtoDecoder = ProtoDecoder(protoDir.toPath())
 

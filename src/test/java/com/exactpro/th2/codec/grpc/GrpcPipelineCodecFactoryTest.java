@@ -38,7 +38,7 @@ public class GrpcPipelineCodecFactoryTest {
 		
 		String parentDir = "/tmp/protos";
 		InputStream inputStream = new ByteArrayInputStream(encodedProtos.getBytes(StandardCharsets.UTF_8));
-		Path decodedProtosDir = GrpcPipelineCodecFactory.Companion.decodeProtos(inputStream, parentDir, null);
+		Path decodedProtosDir = GrpcPipelineCodecFactory.Companion.decodeProtos(inputStream, parentDir);
 		
 		try (Stream<Path> expected = Files.list(protoDir); Stream<Path> actual = Files.list(decodedProtosDir)) {
 			assertEquals(expected.count(), actual.count());

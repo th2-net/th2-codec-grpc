@@ -27,24 +27,29 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class GrpcPipelineCodecFactory : IPipelineCodecFactory {
+
+    override val protocol: String
+        get() = PROTOCOL
+
     override val settingsClass: Class<out IPipelineCodecSettings>
         get() = GrpcPipelineCodecSettings::class.java
 
     private lateinit var protoDir: File
 
-    override fun createCodec(): IPipelineCodec {
+    override fun create(settings: IPipelineCodecSettings?): IPipelineCodec {
         return GrpcPipelineCodec(protoDir)
     }
 
-    override fun init(dictionary: InputStream, settings: IPipelineCodecSettings?) {
-        protoDir = decodeProtos(dictionary, parentProtosDir, settings).toFile()
+    override fun init(dictionary: InputStream) {
+        protoDir = decodeProtos(dictionary, parentProtosDir).toFile()
     }
 
     companion object {
         private val logger = KotlinLogging.logger { }
+        const val PROTOCOL = "protobuf"
         const val parentProtosDir = "/tmp/protos"
 
-        fun decodeProtos(dictionary: InputStream, parentDir: String, settings: IPipelineCodecSettings?): Path {
+        fun decodeProtos(dictionary: InputStream, parentDir: String): Path {
             return dictionary.use {
                 val parentDirPath = Path.of(parentDir)
                 Files.createDirectories(parentDirPath)
