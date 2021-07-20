@@ -20,11 +20,11 @@ import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.api.IPipelineCodecFactory
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
 import mu.KotlinLogging
+import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.stream.Collectors
 
 class GrpcPipelineCodecFactory : IPipelineCodecFactory {
     override val settingsClass: Class<out IPipelineCodecSettings>
@@ -46,17 +46,16 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
 
         fun decodeProtos(dictionary: InputStream, parentDir: String, settings: IPipelineCodecSettings?): Path {
             return dictionary.use {
-                val tempDir = Path.of(parentDir)
-                Files.createDirectories(tempDir)
-                val protoDir = Files.createTempDirectory(tempDir, "")
+                val parentDirPath = Path.of(parentDir)
+                Files.createDirectories(parentDirPath)
+                val protoDir = Files.createTempDirectory(parentDirPath, "")
 
                 ZipBase64Codec.decode(it.readAllBytes(), protoDir.toFile())
 
                 logger.info {
                     "Decoded proto files: ${
-                        Files.list(protoDir).use { stream ->
-                            stream.map { path -> path.fileName.toString() }.collect(Collectors.toList())
-                        }
+                        FileUtils.listFiles(parentDirPath.toFile(), Array(1){"proto"}, true)
+                            .map { file -> parentDirPath.relativize(file.toPath()) }.toList()
                     }"
                 }
                 protoDir
