@@ -73,8 +73,7 @@ dependencies {
 
     api "com.exactpro.th2:common:3.13.4"
 
-    //TODO track the codec version and update it to release one when it's available
-    implementation 'com.exactpro.th2:codec:4.0.0-custom-dictionary-type-1001167469-SNAPSHOT'
+    implementation 'com.exactpro.th2:codec:4.0.0'
     implementation "com.exactpro.th2:grpc-common:3.1.2"
 
     implementation "org.slf4j:slf4j-log4j12"
