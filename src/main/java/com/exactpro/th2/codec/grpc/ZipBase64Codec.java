@@ -26,7 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -40,42 +41,85 @@ public class ZipBase64Codec {
 		if (!dir.isDirectory()) throw new IllegalArgumentException("'dir' does not point to directory");
 
 		try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-			 ZipOutputStream zipOut = new ZipOutputStream(byteOutput);
-			 Stream<Path> files = Files.list(dir.toPath())) {
+			 ZipOutputStream zipOut = new ZipOutputStream(byteOutput)) {
 			
-			for (Iterator<Path> it = files.iterator(); it.hasNext(); ) {
-				File file = it.next().toFile();
-				if (file.isDirectory())
-					continue;
-				ZipEntry archiveEntry = new ZipEntry(file.getName());
-				zipOut.putNextEntry(archiveEntry);
-				Files.copy(file.toPath(), zipOut);
-				zipOut.closeEntry();
+			Collection<File> files;
+			try (Stream<Path> fileStream = Files.list(dir.toPath())) {
+				files = fileStream.map(Path::toFile).collect(Collectors.toList());
 			}
+			for (File file : files)
+				zipFile(file, file.getName(), zipOut);
+			
 			zipOut.finish();
 			return new String(Base64.getEncoder().encode(byteOutput.toByteArray()), CHARSET);
-		}
-	}
-	
-	public static void decode(byte[] data, File dir) throws IOException {
-		byte[] bytes = Base64.getDecoder().decode(data);
-		
-		try (ZipInputStream tarIn = new ZipInputStream(new ByteArrayInputStream(bytes))) {
-
-			ZipEntry entry;
-			while ((entry = tarIn.getNextEntry()) != null) {
-				String name = entry.getName();
-				Path dirPath = dir.toPath();
-				Files.createDirectories(dirPath);
-
-				Path path = dirPath.resolve(name);
-
-				Files.copy(tarIn, path, StandardCopyOption.REPLACE_EXISTING);
-			}
 		}
 	}
 	
 	public static void decode(String data, File dir) throws IOException {
 		decode(data.getBytes(CHARSET), dir);
 	}
+	
+	public static void decode(byte[] data, File dir) throws IOException {
+		byte[] bytes = Base64.getDecoder().decode(data);
+		
+		try (ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(bytes))) {
+
+			ZipEntry entry;
+			
+			while ((entry = zipIn.getNextEntry()) != null) {
+				File newFile = newFile(dir, entry);
+				if (entry.isDirectory()) {
+					if (!newFile.isDirectory() && !newFile.mkdirs()) {
+						throw new IOException("Failed to create directory " + newFile);
+					}
+				} else {
+					// fix for Windows-created archives
+					File parent = newFile.getParentFile();
+					if (!parent.isDirectory() && !parent.mkdirs()) {
+						throw new IOException("Failed to create directory " + parent);
+					}
+					
+					// write file content
+					Files.copy(zipIn, newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
+		}
+	}
+	
+	private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
+		File destFile = new File(destinationDir, zipEntry.getName());
+		
+		String destDirPath = destinationDir.getCanonicalPath();
+		String destFilePath = destFile.getCanonicalPath();
+		
+		if (!destFilePath.startsWith(destDirPath + File.separator)) {
+			throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+		}
+		
+		return destFile;
+	}
+	
+	private static void zipFile(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {
+        if (fileToZip.isHidden()) {
+            return;
+        }
+        if (fileToZip.isDirectory()) {
+            if (!fileName.endsWith("/")) {
+            	fileName += "/";
+            }
+			zipOut.putNextEntry(new ZipEntry(fileName));
+            zipOut.closeEntry();
+            
+            File[] children = fileToZip.listFiles();
+            if (children == null)
+            	return;
+            for (File childFile : children) {
+                zipFile(childFile, fileName + "/" + childFile.getName(), zipOut);
+            }
+            return;
+        }
+        ZipEntry zipEntry = new ZipEntry(fileName);
+        zipOut.putNextEntry(zipEntry);
+		Files.copy(fileToZip.toPath(), zipOut);
+    }
 }
