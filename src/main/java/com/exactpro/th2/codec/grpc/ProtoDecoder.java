@@ -18,8 +18,8 @@ package com.exactpro.th2.codec.grpc;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +36,7 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import org.apache.commons.io.FileUtils;
 
 public class ProtoDecoder {
 	public static final String GRPC_CALL = "GRPC_CALL";
@@ -46,7 +47,7 @@ public class ProtoDecoder {
 	private final Map<String, Descriptors.ServiceDescriptor> serviceDescriptorMap = new HashMap<>();
 	
 	public ProtoDecoder(Path protosPath) throws IOException {
-		List<File> protos = Files.list(protosPath).map(Path::toFile).collect(Collectors.toList());
+		Collection<File> protos = FileUtils.listFiles(protosPath.toFile(), new String[]{"proto"}, true);
 		List<ProtoSchema> protoSchemas = new ProtobufParser(TEMP_DIR).parseProtosToSchemas(protosPath.toFile(), protos);
 		protoSchemas.forEach(schema -> serviceDescriptorMap.putAll(schema.getServices()));
 	}

@@ -100,7 +100,7 @@ class ProtobufParser(private val protoCompileDirectory: String) {
         }
     }
 
-    fun parseProtosToSchemas(protoDir: File, protoFiles: List<File>): List<ProtoSchema> {
+    fun parseProtosToSchemas(protoDir: File, protoFiles: Collection<File>): List<ProtoSchema> {
         return runBlocking {
             val protoSchemas = protoFiles.map { file ->
                 ProtoSchema(
