@@ -28,9 +28,7 @@ import com.exactpro.th2.common.grpc.MessageID;
 import com.exactpro.th2.common.grpc.RawMessage;
 import com.exactpro.th2.common.grpc.RawMessageMetadata;
 import com.exactpro.th2.hello.world.HelloRequest;
-import com.github.os72.protocjar.Protoc;
 import com.google.protobuf.Message;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Test;
 
 public class ProtoDecoderTest {
@@ -41,7 +39,7 @@ public class ProtoDecoderTest {
 		String nameParam = "myProtoDecoder";
 		Message helloRequest = HelloRequest.newBuilder().setName(nameParam).build();
 		RawMessageMetadata metadata = RawMessageMetadata.newBuilder()
-				.putProperties(ProtoDecoder.GRPC_CALL, "/Greeter/SayHello")
+				.putProperties(ProtoDecoder.GRPC_CALL, "/com.exactpro.th2.hello.world.Greeter/SayHello")
 				.setId(MessageID.newBuilder().setDirection(Direction.FIRST))
 				.build();
 		
@@ -52,16 +50,5 @@ public class ProtoDecoderTest {
 		
 		Map<String, Object> fields = decoder.decode(rawMessage);
 		assertEquals(nameParam, fields.get("name"));
-	}
-	
-	@Test
-	public void testProtoc() throws IOException, InterruptedException {
-		String protoPath = "src/test/proto";
-		String input = "helloWorld.proto";
-		String descFile = "gen/test/proto";
-		String[] args = { "--include_std_types", "--descriptor_set_out=" + descFile};
-
-		var exitCode = Protoc.runProtoc(ArrayUtils.add(ArrayUtils.addAll(new String[]{"--proto_path=" + protoPath}, args), input));
-		System.out.println("Exit code: " + exitCode);
 	}
 }

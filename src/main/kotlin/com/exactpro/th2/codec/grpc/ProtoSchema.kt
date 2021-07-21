@@ -30,7 +30,7 @@ data class ProtoSchema(
     }
 
     private val protoSchemaMap = protoSchema.associateBy { it.name }
-    val services = protoSchema.flatMap { createDescriptor(it).services }.map { it.name to it }.toMap()
+    val services = protoSchema.flatMap { createDescriptor(it).services }.map { it.fullName to it }.toMap()
 
     fun getServiceDescriptor(serviceName: String): Optional<Descriptors.ServiceDescriptor> {
         return Optional.ofNullable(services[serviceName])

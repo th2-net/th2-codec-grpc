@@ -1,5 +1,7 @@
 syntax = 'proto3';
 
+package com.exactpro.th2.hello.world;
+
 option java_multiple_files = true;
 option java_package = "com.exactpro.th2.hello.world";
 
