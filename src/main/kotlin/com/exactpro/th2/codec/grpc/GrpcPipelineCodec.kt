@@ -24,11 +24,16 @@ import com.exactpro.th2.common.grpc.MessageGroup
 import com.exactpro.th2.common.grpc.RawMessage
 import com.exactpro.th2.common.message.addField
 import com.exactpro.th2.common.message.plusAssign
+import com.google.protobuf.util.JsonFormat
+import mu.KotlinLogging
 import java.io.File
 
 class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
-
+    companion object {
+        val logger = KotlinLogging.logger { }
+    }
     private val decoder: ProtoDecoder = ProtoDecoder(protoDir.toPath())
+    private val printer = JsonFormat.printer().includingDefaultValueFields()
 
     override fun decode(messageGroup: MessageGroup): MessageGroup {
         val messages = messageGroup.messagesList
@@ -44,7 +49,11 @@ class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
                 continue
             }
 
-            builder += parseMessage(message.rawMessage)
+            val parsed = parseMessage(message.rawMessage)
+            if (logger.isDebugEnabled)
+                logger.debug { "Decoded message:\n${printer.print(parsed)}" }
+
+            builder += parsed
         }
         return builder.build()
     }
