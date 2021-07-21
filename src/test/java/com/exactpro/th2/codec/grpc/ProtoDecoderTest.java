@@ -20,15 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
 
-import com.exactpro.th2.codec.grpc.ProtoDecoder;
 import com.exactpro.th2.common.grpc.Direction;
+import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageID;
 import com.exactpro.th2.common.grpc.RawMessage;
 import com.exactpro.th2.common.grpc.RawMessageMetadata;
-import com.exactpro.th2.hello.world.HelloRequest;
-import com.google.protobuf.Message;
 import org.junit.jupiter.api.Test;
 
 public class ProtoDecoderTest {
@@ -36,19 +33,40 @@ public class ProtoDecoderTest {
 	@Test
 	public void testDecode() throws IOException {
 		ProtoDecoder decoder = new ProtoDecoder(Path.of("src/test/proto"));
-		String nameParam = "myProtoDecoder";
-		Message helloRequest = HelloRequest.newBuilder().setName(nameParam).build();
+		String stringField = "stringFieldValue";
+		String repeatedValue1 = "repeatedValue1";
+		String repeatedValue2 = "repeatedValue2";
+
+		String mapKey1 = "mapKey1";
+		String mapKey2 = "mapKey2";
+		String mapValue1 = "mapValue1";
+		String mapValue2 = "mapValue2";
+
+		TestRequest testRequest = TestRequest.newBuilder()
+				.setStringField(stringField)
+				.addRepeatedField("repeatedValue1")
+				.addRepeatedField("repeatedValue2")
+				.putMapField("mapKey1", "mapValue1")
+				.putMapField("mapKey2", "mapValue2")
+				.build();
 		RawMessageMetadata metadata = RawMessageMetadata.newBuilder()
-				.putProperties(ProtoDecoder.GRPC_CALL, "/com.exactpro.th2.hello.world.Greeter/SayHello")
+				.putProperties(ProtoDecoder.GRPC_CALL, "/com.exactpro.th2.codec.grpc.TestService/TestMethod")
 				.setId(MessageID.newBuilder().setDirection(Direction.FIRST))
 				.build();
 		
 		RawMessage rawMessage = RawMessage.newBuilder()
-				.setBody(helloRequest.toByteString())
+				.setBody(testRequest.toByteString())
 				.setMetadata(metadata)
 				.build();
 		
-		Map<String, Object> fields = decoder.decode(rawMessage);
-		assertEquals(nameParam, fields.get("name"));
+		Message message = decoder.decode(rawMessage);
+		
+		assertEquals(stringField, message.getFieldsMap().get("stringField").getSimpleValue());
+		
+		assertEquals(repeatedValue1, message.getFieldsMap().get("repeatedField").getListValue().getValues(0).getSimpleValue());
+		assertEquals(repeatedValue2, message.getFieldsMap().get("repeatedField").getListValue().getValues(1).getSimpleValue());
+		
+		assertEquals(mapValue1, message.getFieldsMap().get("mapField").getListValue().getValues(0).getMessageValue().getFieldsMap().get("value").getSimpleValue());
+		assertEquals(mapValue2, message.getFieldsMap().get("mapField").getListValue().getValues(1).getMessageValue().getFieldsMap().get("value").getSimpleValue());
 	}
 }

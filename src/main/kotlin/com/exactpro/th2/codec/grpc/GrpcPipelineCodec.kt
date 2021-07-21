@@ -61,14 +61,8 @@ class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
     private fun parseMessage(rawMessage: RawMessage): Message {
         val metadata = rawMessage.metadata
         val parsedBuilder = Message.newBuilder()
-
-        val fieldsMap = decoder.decode(rawMessage)
-
-        fieldsMap.forEach {
-            // TODO make fields adding more realistic
-            parsedBuilder.addField(it.key, it.value)
-        }
-
+        val parsedMessage = decoder.decode(rawMessage)
+        parsedBuilder.mergeFrom(parsedMessage)
         return parsedBuilder.apply {
             parentEventId = rawMessage.parentEventId
             metadataBuilder.apply {
