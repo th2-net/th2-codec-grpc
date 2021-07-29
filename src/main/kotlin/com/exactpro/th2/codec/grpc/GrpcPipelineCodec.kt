@@ -18,11 +18,7 @@ package com.exactpro.th2.codec.grpc
 
 import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.grpc.GrpcPipelineCodecFactory.Companion.PROTOCOL
-import com.exactpro.th2.common.grpc.AnyMessage
-import com.exactpro.th2.common.grpc.Message
-import com.exactpro.th2.common.grpc.MessageGroup
-import com.exactpro.th2.common.grpc.RawMessage
-import com.exactpro.th2.common.message.addField
+import com.exactpro.th2.common.grpc.*
 import com.exactpro.th2.common.message.plusAssign
 import com.google.protobuf.util.JsonFormat
 import mu.KotlinLogging
@@ -31,6 +27,8 @@ import java.io.File
 class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
     companion object {
         val logger = KotlinLogging.logger { }
+        const val ERROR_TYPE_MESSAGE = "th2-codec-error"
+        const val ERROR_CONTENT_FIELD = "content"
     }
     private val decoder: ProtoDecoder = ProtoDecoder(protoDir.toPath())
     private val printer = JsonFormat.printer().includingDefaultValueFields()
@@ -61,7 +59,13 @@ class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
     private fun parseMessage(rawMessage: RawMessage): Message {
         val metadata = rawMessage.metadata
         val parsedBuilder = Message.newBuilder()
-        val parsedMessage = decoder.decode(rawMessage)
+        var parsedMessage: Message
+        try {
+            parsedMessage = decoder.decode(rawMessage)
+        } catch (ex: Exception) {
+            logger.error(ex) { "Cannot decode message from $rawMessage. Creating $ERROR_TYPE_MESSAGE message with description." }
+            return rawMessage.toErrorMessage(ex, PROTOCOL).build()
+        }
         parsedBuilder.mergeFrom(parsedMessage)
         return parsedBuilder.apply {
             parentEventId = rawMessage.parentEventId
@@ -72,6 +76,31 @@ class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
                 this.protocol = PROTOCOL
             }
         }.build()
+    }
+
+    private fun RawMessage.toErrorMessage(exception: Exception, protocol: String): Message.Builder = Message.newBuilder().apply {
+        if (hasParentEventId()) {
+            parentEventId = parentEventId
+        }
+        metadata = toMessageMetadataBuilder(protocol).setMessageType(ERROR_TYPE_MESSAGE).build()
+
+        val content = buildString {
+            var throwable: Throwable? = exception
+
+            while (throwable != null) {
+                append("Caused by: ${throwable.message}. ")
+                throwable = throwable.cause
+            }
+        }
+        putFields(ERROR_CONTENT_FIELD, Value.newBuilder().setSimpleValue(content).build())
+    }
+
+    private fun RawMessage.toMessageMetadataBuilder(protocol: String): MessageMetadata.Builder {
+        return MessageMetadata.newBuilder()
+            .setId(metadata.id)
+            .setTimestamp(metadata.timestamp)
+            .setProtocol(protocol)
+            .putAllProperties(metadata.propertiesMap)
     }
 
     override fun encode(messageGroup: MessageGroup): MessageGroup {
