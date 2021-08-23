@@ -49,7 +49,12 @@ public class ProtoDecoder {
 	
 	public Message decode(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
 		RawMessageMetadata metadata = message.getMetadata();
-		String grpcCall = metadata.getPropertiesOrThrow(GRPC_CALL);
+		Map<String, String> props = metadata.getPropertiesMap();
+		String grpcCall = props.get(GRPC_CALL);
+		if (grpcCall == null) {
+			throw new IllegalArgumentException(GRPC_CALL + " property is not set in the message metadata");
+		}
+		
 		Direction direction = metadata.getId().getDirection();
 		
 		Descriptors.Descriptor descriptor = getDescriptor(grpcCall, direction);
