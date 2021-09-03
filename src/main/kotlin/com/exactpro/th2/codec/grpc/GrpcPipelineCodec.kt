@@ -18,6 +18,7 @@ package com.exactpro.th2.codec.grpc
 
 import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.grpc.GrpcPipelineCodecFactory.Companion.PROTOCOL
+import com.exactpro.th2.codec.util.toDebugString
 import com.exactpro.th2.common.grpc.*
 import com.exactpro.th2.common.message.plusAssign
 import com.google.protobuf.util.JsonFormat
@@ -48,8 +49,10 @@ class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
             }
 
             val parsed = parseMessage(message.rawMessage)
-            if (logger.isDebugEnabled)
-                logger.debug { "Decoded message:\n${printer.print(parsed)}" }
+            if (logger.isDebugEnabled) {
+                logger.debug { "Raw message: \n${message.rawMessage.toDebugString()}" }
+                logger.debug { "Decoded message:\n${parsed.toDebugString()}" }
+            }
 
             builder += parsed
         }
