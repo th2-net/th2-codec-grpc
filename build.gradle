@@ -9,7 +9,6 @@ plugins {
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.2.1594'
     genDir = 'gen/'
     genTestGrpc = genDir + 'test/grpc'
     genTestJava = genDir + 'test/java'
@@ -35,10 +34,6 @@ repositories {
     maven {
         name 'Sonatype_releases'
         url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-    }
-    maven {
-        name 'Nexus'
-        url 'https://nexus.exactpro.com/repository/oss-maven'
     }
 
     configurations.all {
@@ -89,8 +84,6 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0"
 
-    //implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
-
     testImplementation 'javax.annotation:javax.annotation-api:1.3.2'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
@@ -98,8 +91,11 @@ dependencies {
 }
 
 test {
-    dependsOn("generateTestProto")
     useJUnitPlatform()
+}
+
+compileTestJava {
+    dependsOn("generateTestProto")
 }
 
 application {
