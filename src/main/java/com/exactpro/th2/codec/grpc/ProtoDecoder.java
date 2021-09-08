@@ -85,7 +85,7 @@ public class ProtoDecoder {
 		if (methodDesc == null)
 			throw new NoSuchElementException("There is no such method '" + methodName + "' for service '" + serviceName + '\'');
 
-		if (direction == Direction.FIRST)
+		if (direction == Direction.SECOND)
 			return methodDesc.getInputType();
 		else
 			return methodDesc.getOutputType();
