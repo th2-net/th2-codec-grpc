@@ -51,7 +51,7 @@ public class ProtoDecoderTest {
 				.build();
 		RawMessageMetadata metadata = RawMessageMetadata.newBuilder()
 				.putProperties(ProtoDecoder.GRPC_CALL, "/com.exactpro.th2.codec.grpc.TestService/TestMethod")
-				.setId(MessageID.newBuilder().setDirection(Direction.FIRST))
+				.setId(MessageID.newBuilder().setDirection(Direction.SECOND))
 				.build();
 		
 		RawMessage rawMessage = RawMessage.newBuilder()
