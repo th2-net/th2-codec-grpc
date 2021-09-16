@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -39,9 +41,12 @@ public class GrpcPipelineCodecFactoryTest {
 		String parentDir = "/tmp/protos";
 		InputStream inputStream = new ByteArrayInputStream(encodedProtos.getBytes(StandardCharsets.UTF_8));
 		Path decodedProtosDir = GrpcPipelineCodecFactory.Companion.decodeProtos(inputStream, parentDir);
-		
+
 		try (Stream<Path> expected = Files.list(protoDir); Stream<Path> actual = Files.list(decodedProtosDir)) {
-			assertEquals(expected.count(), actual.count());
+			Set<Path> expSet = expected.map(Path::getFileName).collect(Collectors.toSet());
+			Set<Path> actSet = actual.map(Path::getFileName).collect(Collectors.toSet());
+
+			assertEquals(expSet, actSet);
 		}
 	}
 }
