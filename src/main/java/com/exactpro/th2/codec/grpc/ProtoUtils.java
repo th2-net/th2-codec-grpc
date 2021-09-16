@@ -54,18 +54,9 @@ public class ProtoUtils {
     @NotNull
     private static ListValue convertToListValue(Object fieldValue) {
         ListValue.Builder listBuilder = ListValue.newBuilder();
-        var fieldList = (List<?>)fieldValue;
-        if (!fieldList.isEmpty() && fieldList.get(0) instanceof com.google.protobuf.Message) {
-            fieldList.forEach(message -> listBuilder.addValues(
-                            Value.newBuilder()
-                            .setMessageValue(convertComplex((MessageOrBuilder) message))
-                            .build()
-                    ));
-        } else {
-            fieldList.forEach(value -> listBuilder.addValues(
-                            Value.newBuilder().setSimpleValue(value.toString()).build()
-                    ));
-        }
+        Iterable<?> fieldList = (Iterable<?>) fieldValue;
+        fieldList.forEach(element -> listBuilder.addValues(convertToValue(element)));
+
         return listBuilder.build();
     }
 
