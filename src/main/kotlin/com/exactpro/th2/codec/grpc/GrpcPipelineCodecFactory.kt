@@ -36,12 +36,15 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
 
     private lateinit var protoDir: File
 
+    private lateinit var serviceSchema: ServiceSchema
+
     override fun create(settings: IPipelineCodecSettings?): IPipelineCodec {
-        return GrpcPipelineCodec(protoDir)
+        return GrpcPipelineCodec(serviceSchema)
     }
 
     override fun init(dictionary: InputStream) {
         protoDir = decodeProtos(dictionary, parentProtosDir).toFile()
+        serviceSchema = ServiceSchema(protoDir)
     }
 
     companion object {

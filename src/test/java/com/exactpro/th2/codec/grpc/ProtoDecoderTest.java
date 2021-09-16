@@ -18,6 +18,7 @@ package com.exactpro.th2.codec.grpc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -32,7 +33,9 @@ public class ProtoDecoderTest {
 	
 	@Test
 	public void testDecode() throws IOException {
-		ProtoDecoder decoder = new ProtoDecoder(Path.of("src/test/proto"));
+		ServiceSchema serviceSchema = new ServiceSchema(new File("src/test/proto"));
+		ProtoDecoder decoder = new ProtoDecoder(serviceSchema);
+
 		String stringField = "stringFieldValue";
 		String repeatedValue1 = "repeatedValue1";
 		String repeatedValue2 = "repeatedValue2";
@@ -53,14 +56,14 @@ public class ProtoDecoderTest {
 				.putProperties(ProtoDecoder.GRPC_CALL, "/com.exactpro.th2.codec.grpc.TestService/TestMethod")
 				.setId(MessageID.newBuilder().setDirection(Direction.SECOND))
 				.build();
-		
+
 		RawMessage rawMessage = RawMessage.newBuilder()
 				.setBody(testRequest.toByteString())
 				.setMetadata(metadata)
 				.build();
-		
-		Message message = decoder.decode(rawMessage);
-		
+
+		Message message = decoder.decode(rawMessage).build();
+
 		assertEquals(stringField, message.getFieldsMap().get("stringField").getSimpleValue());
 		
 		assertEquals(repeatedValue1, message.getFieldsMap().get("repeatedField").getListValue().getValues(0).getSimpleValue());

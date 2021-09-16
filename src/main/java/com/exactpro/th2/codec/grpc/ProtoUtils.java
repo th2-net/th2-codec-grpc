@@ -24,27 +24,23 @@ import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Value;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.MessageOrBuilder;
 import org.jetbrains.annotations.NotNull;
 
 public class ProtoUtils {
-	public static Message toMessage(DynamicMessage dynamicMessage) {
-		Message.Builder messageBuilder = Message.newBuilder();
-		messageBuilder.getMetadataBuilder().setMessageType(dynamicMessage.getDescriptorForType().getName());
-		
-		for (Map.Entry<Descriptors.FieldDescriptor, Object> fieldEntry : dynamicMessage.getAllFields().entrySet()) {
-			Descriptors.FieldDescriptor descriptor = fieldEntry.getKey();
-			Object objectValue = fieldEntry.getValue();
-			Value value = convertToValue(objectValue);
-			
-			messageBuilder.putFields(descriptor.getName(), value);
-		}
-		return messageBuilder.build();
+	public static Message.Builder toMessage(DynamicMessage dynamicMessage) {
+		if (!dynamicMessage.getUnknownFields().asMap().isEmpty()) {
+		    throw new IllegalArgumentException("Message has unknown fields: " + dynamicMessage.getUnknownFields());
+        }
+		Message.Builder messageBuilder = convertComplex(dynamicMessage);
+        messageBuilder.getMetadataBuilder().setMessageType(dynamicMessage.getDescriptorForType().getName());
+		return messageBuilder;
 	}
 
     private static Value convertToValue(Object fieldValue) {
         Value.Builder valueBuilder = Value.newBuilder();
         if (fieldValue instanceof com.google.protobuf.Message) {
-            Message nestedMessage = convertComplex((com.google.protobuf.Message) fieldValue);
+            Message.Builder nestedMessage = convertComplex((MessageOrBuilder) fieldValue);
             valueBuilder.setMessageValue(nestedMessage);
         } else if (fieldValue instanceof List<?>) {
             ListValue listValue = convertToListValue(fieldValue);
@@ -62,7 +58,7 @@ public class ProtoUtils {
         if (!fieldList.isEmpty() && fieldList.get(0) instanceof com.google.protobuf.Message) {
             fieldList.forEach(message -> listBuilder.addValues(
                             Value.newBuilder()
-                            .setMessageValue(convertComplex((com.google.protobuf.Message)message))
+                            .setMessageValue(convertComplex((MessageOrBuilder) message))
                             .build()
                     ));
         } else {
@@ -73,7 +69,7 @@ public class ProtoUtils {
         return listBuilder.build();
     }
 
-    private static Message convertComplex(com.google.protobuf.Message fieldValue) {
+    private static Message.Builder convertComplex(MessageOrBuilder fieldValue) {
         Message.Builder messageBuilder = Message.newBuilder();
         for (Map.Entry<Descriptors.FieldDescriptor, Object> fieldEntry : fieldValue.getAllFields().entrySet()) {
 			Descriptors.FieldDescriptor descriptor = fieldEntry.getKey();
@@ -82,6 +78,6 @@ public class ProtoUtils {
 			
 			messageBuilder.putFields(descriptor.getName(), value);
 		}
-        return messageBuilder.build();
+        return messageBuilder;
     }
 }

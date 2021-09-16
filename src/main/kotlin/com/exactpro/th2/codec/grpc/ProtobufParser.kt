@@ -18,104 +18,72 @@ package com.exactpro.th2.codec.grpc
 
 import com.github.os72.protocjar.Protoc
 import com.google.protobuf.DescriptorProtos
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import java.io.File
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 
 
-class ProtobufParser(private val protoCompileDirectory: String) {
+class ProtobufParser(private val protoCompileDirectory: Path) {
 
     companion object {
         val logger = KotlinLogging.logger { }
     }
 
-    private val defaultPath = "src/main/resources/proto"
-    private val temporaryFiles = createDirectory("temp")
-
     private data class ParsedProtoFile(
         val descriptor: List<DescriptorProtos.FileDescriptorProto>
     )
 
-    private fun createDirectory(directoryName: String): File {
-        return protoCompileDirectory.let {
-            var directory = File(it + File.separator + directoryName)
-            if (!createDirIfNotExist(directory)) {
-                directory = File(defaultPath + File.separator + directoryName)
-                if (!createDirIfNotExist(directory))
-                    throw IOException("Failed to create directory: ${it + File.separator + directoryName} or directory: ${directory.path}")
-            }
-            directory
+    private fun compileSchema(protoPaths: List<String>, protoFile: String, args: List<String>) {
+        val exitCode = Protoc.runProtoc((protoPaths.map { "--proto_path=$it" } + args + listOf(
+            protoFile
+        )).toTypedArray())
+
+        if (exitCode != 0) {
+            throw ProtoParseException("Failed to generate schema for: $protoFile")
         }
     }
 
-    private fun createDirIfNotExist(directory: File): Boolean {
-        return directory.exists() || directory.mkdirs()
-    }
-
-    private suspend fun compileSchema(protoPaths: List<String>, protoFile: String, args: List<String>) {
-        withContext(Dispatchers.IO) {
-            val exitCode = Protoc.runProtoc((protoPaths.map { "--proto_path=$it" } + args + listOf(
-                protoFile
-            )).toTypedArray())
-
-            if (exitCode != 0) {
-                throw ProtoParseException("Failed to generate schema for: $protoFile")
-            }
-        }
-    }
-
-    private suspend fun lookupProtos(
+    private fun lookupProtos(
         protoPaths: List<String>, protoFile: String, tempDir: Path, resolved: MutableSet<String>
     ): List<DescriptorProtos.FileDescriptorProto> {
-        return withContext(Dispatchers.IO) {
-            val schema = generateSchema(protoPaths, protoFile, tempDir)
-            schema.fileList.filter { resolved.add(it.name) }.flatMap { fd ->
-                fd.dependencyList.filterNot(resolved::contains)
-                    .flatMap { lookupProtos(protoPaths, it, tempDir, resolved) } + fd
-            }
+        val schema = generateSchema(protoPaths, protoFile, tempDir)
+        return schema.fileList.filter { resolved.add(it.name) }.flatMap { fd ->
+            fd.dependencyList.filterNot(resolved::contains)
+                .flatMap { lookupProtos(protoPaths, it, tempDir, resolved) } + fd
         }
     }
 
-    private suspend fun generateSchema(
-        protoPaths: List<String>, protoFile: String, tempDir: Path
-    ): DescriptorProtos.FileDescriptorSet {
-        return withContext(Dispatchers.IO) {
-            var outFile: File? = null
-            try {
-                outFile = File.createTempFile(tempDir.toString(), null, null)
-                compileSchema(
-                    protoPaths, protoFile, listOf(
-                        "--include_std_types", "--descriptor_set_out=$outFile"
-                    )
+    private fun generateSchema(protoPaths: List<String>, protoFile: String, tempDir: Path): DescriptorProtos.FileDescriptorSet {
+        var outFile: File? = null
+        return try {
+            outFile = File.createTempFile(tempDir.toString(), null, null)
+            compileSchema(
+                protoPaths, protoFile, listOf(
+                    "--include_std_types", "--descriptor_set_out=$outFile"
                 )
-                Files.newInputStream(outFile.toPath()).use { DescriptorProtos.FileDescriptorSet.parseFrom(it) }
-            } finally {
-                outFile?.delete()
-            }
+            )
+            Files.newInputStream(outFile.toPath()).use { DescriptorProtos.FileDescriptorSet.parseFrom(it) }
+        } finally {
+            outFile?.delete()
         }
     }
 
     fun parseProtosToSchemas(protoDir: File, protoFiles: Collection<File>): List<ProtoSchema> {
-        return runBlocking {
-            val protoSchemas = protoFiles.map { file ->
-                ProtoSchema(
-                    parseProtoFile(file, protoDir.path).descriptor,
-                )
+        return protoFiles.map { file ->
+            val descriptor = parseProtoFile(file, protoDir.path).descriptor
+            if (logger.isDebugEnabled) {
+                descriptor.forEach {
+                    logger.debug { "Found descriptor: ${it.name}" }
+                }
             }
-            protoSchemas
+            ProtoSchema(descriptor)
         }
     }
 
-    private suspend fun parseProtoFile(
-        protoFile: File, searchPath: String
-    ): ParsedProtoFile {
+    private fun parseProtoFile(protoFile: File, searchPath: String): ParsedProtoFile {
         val fileDescription = lookupProtos(
-            listOf(searchPath), protoFile.path, temporaryFiles.toPath(), mutableSetOf()
+            listOf(searchPath), protoFile.path, protoCompileDirectory, mutableSetOf()
         )
         return ParsedProtoFile(fileDescription)
     }

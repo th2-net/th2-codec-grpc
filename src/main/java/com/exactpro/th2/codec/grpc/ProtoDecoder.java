@@ -16,11 +16,7 @@
 
 package com.exactpro.th2.codec.grpc;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -33,7 +29,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,17 +36,13 @@ public class ProtoDecoder {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProtoDecoder.class);
 	
 	public static final String GRPC_CALL = "GRPC_CALL";
-	private static final String TEMP_DIR = "gen/test/temp";
+	private final ServiceSchema serviceSchema;
 
-	private final Map<String, Descriptors.ServiceDescriptor> serviceDescriptorMap = new HashMap<>();
-	
-	public ProtoDecoder(Path protosPath) {
-		Collection<File> protos = FileUtils.listFiles(protosPath.toFile(), new String[]{"proto"}, true);
-		List<ProtoSchema> protoSchemas = new ProtobufParser(TEMP_DIR).parseProtosToSchemas(protosPath.toFile(), protos);
-		protoSchemas.forEach(schema -> serviceDescriptorMap.putAll(schema.getServices()));
+	public ProtoDecoder(ServiceSchema serviceSchema) {
+		this.serviceSchema = serviceSchema;
 	}
 	
-	public Message decode(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
+	public Message.Builder decode(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
 		RawMessageMetadata metadata = message.getMetadata();
 		Map<String, String> props = metadata.getPropertiesMap();
 		String grpcCall = props.get(GRPC_CALL);
@@ -76,19 +67,18 @@ public class ProtoDecoder {
 
 		LOGGER.debug("Getting descriptor for {}, direction: {}", grpcCall, direction);
 		
-		Descriptors.ServiceDescriptor serviceDesc = serviceDescriptorMap.get(serviceName);
-		if (serviceDesc == null)
-			throw new NoSuchElementException("There is no such service '" + serviceName + '\'');
+		Descriptors.ServiceDescriptor serviceDesc = serviceSchema.getServiceDesc(serviceName);
 		
 		String methodName = grpcCall.getMethod();
 		Descriptors.MethodDescriptor methodDesc = serviceDesc.findMethodByName(methodName);
-		if (methodDesc == null)
+		if (methodDesc == null) {
 			throw new NoSuchElementException("There is no such method '" + methodName + "' for service '" + serviceName + '\'');
+		}
 
-		if (direction == Direction.SECOND)
+		if (direction == Direction.SECOND) {
 			return methodDesc.getInputType();
-		else
-			return methodDesc.getOutputType();
+		}
+		return methodDesc.getOutputType();
 	}
 	
 	private static class GrpcCall {
@@ -97,9 +87,9 @@ public class ProtoDecoder {
 		
 		public GrpcCall(String path) {
 			Path callPath = Path.of(path);
-			if (callPath.getNameCount() != 2)
-				throw new IllegalArgumentException("'path' must consist of 2 elements");
-			
+			if (callPath.getNameCount() != 2) {
+				throw new IllegalArgumentException("'path' must consist of 2 elements: " + callPath.getNameCount());
+			}
 			service = callPath.getName(0).toString();
 			method = callPath.getName(1).toString();
 		}

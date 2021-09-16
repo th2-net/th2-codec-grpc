@@ -23,15 +23,14 @@ import com.exactpro.th2.common.grpc.*
 import com.exactpro.th2.common.message.plusAssign
 import com.google.protobuf.util.JsonFormat
 import mu.KotlinLogging
-import java.io.File
 
-class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
+class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
     companion object {
         val logger = KotlinLogging.logger { }
         const val ERROR_TYPE_MESSAGE = "th2-codec-error"
         const val ERROR_CONTENT_FIELD = "content"
     }
-    private val decoder: ProtoDecoder = ProtoDecoder(protoDir.toPath())
+    private val decoder: ProtoDecoder = ProtoDecoder(serviceSchema)
     private val printer = JsonFormat.printer().includingDefaultValueFields()
 
     override fun decode(messageGroup: MessageGroup): MessageGroup {
@@ -61,15 +60,13 @@ class GrpcPipelineCodec (protoDir: File) : IPipelineCodec {
 
     private fun parseMessage(rawMessage: RawMessage): Message {
         val metadata = rawMessage.metadata
-        val parsedBuilder = Message.newBuilder()
-        var parsedMessage: Message
+        val parsedBuilder: Message.Builder
         try {
-            parsedMessage = decoder.decode(rawMessage)
+            parsedBuilder = decoder.decode(rawMessage)
         } catch (ex: Exception) {
             logger.error(ex) { "Cannot decode message from $rawMessage. Creating $ERROR_TYPE_MESSAGE message with description." }
             return rawMessage.toErrorMessage(ex, PROTOCOL).build()
         }
-        parsedBuilder.mergeFrom(parsedMessage)
         return parsedBuilder.apply {
             parentEventId = rawMessage.parentEventId
             metadataBuilder.apply {
