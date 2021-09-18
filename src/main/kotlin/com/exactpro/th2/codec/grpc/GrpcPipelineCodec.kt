@@ -21,7 +21,6 @@ import com.exactpro.th2.codec.grpc.GrpcPipelineCodecFactory.Companion.PROTOCOL
 import com.exactpro.th2.codec.util.toDebugString
 import com.exactpro.th2.common.grpc.*
 import com.exactpro.th2.common.message.plusAssign
-import com.google.protobuf.util.JsonFormat
 import mu.KotlinLogging
 
 class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
@@ -31,7 +30,6 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
         const val ERROR_CONTENT_FIELD = "content"
     }
     private val decoder: ProtoDecoder = ProtoDecoder(serviceSchema)
-    private val printer = JsonFormat.printer().includingDefaultValueFields()
 
     override fun decode(messageGroup: MessageGroup): MessageGroup {
         val messages = messageGroup.messagesList
@@ -62,7 +60,7 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
         val metadata = rawMessage.metadata
         val parsedBuilder: Message.Builder
         try {
-            parsedBuilder = decoder.decode(rawMessage)
+            parsedBuilder = decoder.decodeWithJsonBody(rawMessage)
         } catch (ex: Exception) {
             logger.error(ex) { "Cannot decode message from $rawMessage. Creating $ERROR_TYPE_MESSAGE message with description." }
             return rawMessage.toErrorMessage(ex, PROTOCOL).build()

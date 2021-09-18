@@ -29,6 +29,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,17 +43,29 @@ public class ProtoDecoder {
 		this.serviceSchema = serviceSchema;
 	}
 	
-	public Message.Builder decode(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
+	public DynamicMessage decodeToDynamic(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
 		RawMessageMetadata metadata = message.getMetadata();
 		Map<String, String> props = metadata.getPropertiesMap();
 		String grpcCall = props.get(GRPC_CALL);
 		if (grpcCall == null) {
 			throw new IllegalArgumentException(GRPC_CALL + " property is not set in the message metadata");
 		}
-		
 		Direction direction = metadata.getId().getDirection();
-		
-		DynamicMessage dynamicMessage = decode(message.getBody(), grpcCall, direction);
+
+		return decode(message.getBody(), grpcCall, direction);
+	}
+
+	public Message.Builder decodeWithJsonBody(RawMessage message) throws InvalidProtocolBufferException, JsonProcessingException {
+		return decode(message, true);
+	}
+
+	public Message.Builder decode(RawMessage message, boolean jsonBody) throws InvalidProtocolBufferException, JsonProcessingException {
+		DynamicMessage dynamicMessage = decodeToDynamic(message);
+		Message.Builder messageBuilder = Message.newBuilder();
+		if (jsonBody) {
+			String json = JsonFormat.printer().print(dynamicMessage);
+			return messageBuilder.setBody(Message.Body.newBuilder().setJson(json));
+		}
 		return ProtoUtils.toMessage(dynamicMessage);
 	}
 	

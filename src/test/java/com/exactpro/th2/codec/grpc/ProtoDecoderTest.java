@@ -62,7 +62,7 @@ public class ProtoDecoderTest {
 				.setMetadata(metadata)
 				.build();
 
-		Message message = decoder.decode(rawMessage).build();
+		Message message = decoder.decode(rawMessage, false).build();
 
 		assertEquals(stringField, message.getFieldsMap().get("stringField").getSimpleValue());
 		
