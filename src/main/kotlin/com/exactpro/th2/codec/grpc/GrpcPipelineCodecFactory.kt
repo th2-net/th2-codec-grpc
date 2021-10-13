@@ -49,7 +49,7 @@ class GrpcPipelineCodecFactory : IPipelineCodecFactory {
 
     companion object {
         private val logger = KotlinLogging.logger { }
-        const val PROTOCOL = "protobuf"
+        const val PROTOCOL = "GRPC"
         const val parentProtosDir = "/tmp/protos"
 
         fun decodeProtos(dictionary: InputStream, parentDir: String): Path {

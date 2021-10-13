@@ -46,10 +46,14 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
                 builder.addMessages(message)
                 continue
             }
-
-            val parsed = parseMessage(message.rawMessage)
+            val rawMessage = message.rawMessage
+            if (rawMessage.metadata.protocol != PROTOCOL) {
+                builder.addMessages(message)
+                continue
+            }
+            val parsed = parseMessage(rawMessage)
             if (logger.isDebugEnabled) {
-                logger.debug { "Raw message: \n${message.rawMessage.toDebugString()}" }
+                logger.debug { "Raw message: \n${rawMessage.toDebugString()}" }
                 logger.debug { "Decoded message:\n${parsed.toDebugString()}" }
             }
 
