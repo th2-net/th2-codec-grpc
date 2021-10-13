@@ -23,6 +23,7 @@ import com.exactpro.th2.common.grpc.*
 import com.exactpro.th2.common.message.plusAssign
 import com.google.protobuf.util.JsonFormat
 import mu.KotlinLogging
+import org.apache.commons.lang3.StringUtils
 
 class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
     companion object {
@@ -49,7 +50,8 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
             val rawMessage = message.rawMessage
             val metadata = rawMessage.metadata
             val protocol = metadata.protocol
-            if (protocol != PROTOCOL) {
+
+            if (StringUtils.isNotEmpty(protocol) && protocol != PROTOCOL) {
                 if (logger.isDebugEnabled) {
                     logger.debug(
                         "Message protocol is '{}'. Could not decode the message: {}",
