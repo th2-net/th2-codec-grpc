@@ -47,7 +47,16 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
                 continue
             }
             val rawMessage = message.rawMessage
-            if (rawMessage.metadata.protocol != PROTOCOL) {
+            val metadata = rawMessage.metadata
+            val protocol = metadata.protocol
+            if (protocol != PROTOCOL) {
+                if (logger.isDebugEnabled) {
+                    logger.debug(
+                        "Message protocol is '{}'. Could not decode the message: {}",
+                        protocol,
+                        JsonFormat.printer().omittingInsignificantWhitespace().print(metadata)
+                    )
+                }
                 builder.addMessages(message)
                 continue
             }
