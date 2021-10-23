@@ -62,10 +62,16 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
                 builder.addMessages(message)
                 continue
             }
+            if (logger.isDebugEnabled) {
+                logger.debug("Decoding message: {}" + rawMessage.metadata.id.toDebugString())
+            }
             val parsed = parseMessage(rawMessage)
             if (logger.isDebugEnabled) {
-                logger.debug { "Raw message: \n${rawMessage.toDebugString()}" }
-                logger.debug { "Decoded message:\n${parsed.toDebugString()}" }
+                logger.debug("Message decoded: {}" + parsed.metadata.id.toDebugString())
+            }
+            if (logger.isTraceEnabled) {
+                logger.trace { "Raw message: \n${rawMessage.toDebugString()}" }
+                logger.trace { "Decoded message:\n${parsed.toDebugString()}" }
             }
 
             builder += parsed
@@ -80,7 +86,7 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
             parsedBuilder = decoder.decode(rawMessage)
         } catch (ex: Exception) {
             logger.error(ex) { "Cannot decode message from $rawMessage. Creating $ERROR_TYPE_MESSAGE message with description." }
-            return rawMessage.toErrorMessage(ex, PROTOCOL).build()
+            return rawMessage.toErrorMessage(ex, metadata.protocol).build()
         }
         return parsedBuilder.apply {
             parentEventId = rawMessage.parentEventId
