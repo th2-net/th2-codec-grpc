@@ -19,6 +19,7 @@ package com.exactpro.th2.codec.grpc
 import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.api.IPipelineCodecFactory
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
+import com.google.auto.service.AutoService
 import mu.KotlinLogging
 import org.apache.commons.io.FileUtils
 import java.io.File
@@ -26,6 +27,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 
+@AutoService(IPipelineCodecFactory::class)
 class GrpcPipelineCodecFactory : IPipelineCodecFactory {
 
     override val protocol: String
