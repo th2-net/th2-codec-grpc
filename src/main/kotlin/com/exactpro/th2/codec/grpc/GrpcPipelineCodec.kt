@@ -72,7 +72,6 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
             metadataBuilder.apply {
                 putAllProperties(metadata.propertiesMap)
                 this.id = metadata.id
-                this.timestamp = metadata.timestamp
                 this.protocol = PROTOCOL
             }
         }.build()
@@ -98,7 +97,6 @@ class GrpcPipelineCodec (serviceSchema: ServiceSchema) : IPipelineCodec {
     private fun RawMessage.toMessageMetadataBuilder(protocol: String): MessageMetadata.Builder {
         return MessageMetadata.newBuilder()
             .setId(metadata.id)
-            .setTimestamp(metadata.timestamp)
             .setProtocol(protocol)
             .putAllProperties(metadata.propertiesMap)
     }

@@ -66,10 +66,10 @@ configurations {
 dependencies {
     api platform('com.exactpro.th2:bom:4.1.0')
 
-    api "com.exactpro.th2:common:3.44.0"
+    api "com.exactpro.th2:common:5.1.0-dev-version-5+"
 
-    implementation 'com.exactpro.th2:codec:4.7.5'
-    implementation "com.exactpro.th2:grpc-common:3.13.0"
+    implementation 'com.exactpro.th2:codec:5.0.1-dev-version-5+'
+    implementation "com.exactpro.th2:grpc-common:4.1.0-dev-version-4+"
 
     implementation "org.slf4j:slf4j-api"
     implementation "io.github.microutils:kotlin-logging:3.0.0"
