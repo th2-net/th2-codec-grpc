@@ -68,7 +68,7 @@ dependencies {
 
     api "com.exactpro.th2:common:3.44.0"
 
-    implementation 'com.exactpro.th2:codec:4.7.5'
+    implementation 'com.exactpro.th2:codec:4.7.6'
     implementation "com.exactpro.th2:grpc-common:3.13.0"
 
     implementation "org.slf4j:slf4j-api"
